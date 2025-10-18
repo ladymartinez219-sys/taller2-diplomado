@@ -1,0 +1,341 @@
+# Regresión Lineal
+#Predicción de Alquiler de Bicicletas
+
+#1. Introducción
+# ¿Qué tipo de problemas se pueden resolver con regresión lineal?
+#La regresión lineal se utiliza para problemas donde queremos predecir un valor numérico continuo basado en una o más variables predictoras. Algunos ejemplos:
+
+#1. Predicción de precios: precios de viviendas, acciones, productos
+#2. Pronósticos de demanda: ventas, alquileres, consumo energético
+#3. Análisis de tendencias: crecimiento poblacional, tendencias económicas
+#4. Relaciones científicas: dosis-respuesta en medicina, relaciones físicas
+
+#En este caso, queremos predecir el número de bicicletas alquiladas (valor continuo) basado en variables como temperatura, humedad, entre otras.
+
+# 2. Carga de Dataset
+# Importa el/los módulo(s) pandas as pd para usarlos en el análisis.
+import pandas as pd
+import numpy as np
+
+# Obtiene el dataset de url externa
+!wget https://raw.githubusercontent.com/MicrosoftDocs/mslearn-introduction-to-machine-learning/main/Data/ml-basics/daily-bike-share.csv
+
+# Lee un archivo CSV y lo carga en un DataFrame de Pandas.
+bike_data = pd.read_csv("daily-bike-share.csv")
+
+# Muestra las primeras 5 filas del dataset
+print("Primeras 5 filas del dataset:")
+print(bike_data.head())
+print("\n" + "="*50 + "\n")
+
+# Muestra información general del dataset
+print("Información del dataset:")
+print(bike_data.info())
+print("\n" + "="*50 + "\n")
+
+# Genera una tabla con la descripción de cada campo y su significado
+print("Descripción de campos:")
+field_descriptions = {
+    'instant': 'ID único del registro',
+    'dteday': 'Fecha',
+    'season': 'Estación (1:primavera, 2:verano, 3:otoño, 4:invierno)',
+    'yr': 'Año (0:2011, 1:2012)',
+    'mnth': 'Mes (1 a 12)',
+    'holiday': 'Si el día es festivo',
+    'weekday': 'Día de la semana',
+    'workingday': 'Si es día laboral',
+    'weathersit': 'Situación climática',
+    'temp': 'Temperatura normalizada',
+    'atemp': 'Temperatura percibida normalizada',
+    'hum': 'Humedad normalizada',
+    'windspeed': 'Velocidad del viento normalizada',
+    'casual': 'Usuarios casuales',
+    'registered': 'Usuarios registrados',
+    'cnt': 'Total de bicicletas alquiladas (objetivo)'
+}
+
+for field, description in field_descriptions.items():
+    print(f"{field}: {description}")
+
+print("\n" + "="*50 + "\n")
+
+# Pregunta: ¿Qué variable queremos predecir?
+#Queremos predecir la variable 'cnt' (count), que representa el número total de bicicletas alquiladas en un día. Esta es nuestra variable objetivo.
+# Extrae el día del mes desde la columna de fechas
+bike_data['dteday'] = pd.to_datetime(bike_data['dteday'])
+bike_data['day'] = bike_data['dteday'].dt.day
+
+# Muestra las primeras 25 filas del dataset
+print("Primeras 25 filas del dataset:")
+print(bike_data.head(25))
+
+# 3. Preparación de datos
+# Definir las características numéricas relevantes del dataset
+numeric_features = ['season', 'yr', 'mnth', 'holiday', 'weekday', 'workingday', 
+                   'weathersit', 'temp', 'atemp', 'hum', 'windspeed']
+# Seleccionar la variable objetivo (label)
+target = 'cnt'
+
+# Mostrar estadísticas descriptivas de las variables numéricas y el objetivo
+print("Estadísticas descriptivas - Variables predictoras:")
+print(bike_data[numeric_features].describe())
+print("\n" + "="*50 + "\n")
+
+print("Estadísticas descriptivas - Variable objetivo:")
+print(bike_data[target].describe())
+print("\n" + "="*50 + "\n")
+
+# Verificar valores nulos
+print("Valores nulos por columna:")
+print(bike_data[numeric_features + [target]].isnull().sum())
+# 4. Gráfica de datos
+
+import matplotlib.pyplot as plt
+
+# Grafica una dispersión de temperatura vs rentals
+plt.figure(figsize=(10, 6))
+plt.scatter(bike_data['temp'], bike_data['cnt'], alpha=0.6)
+plt.xlabel('Temperatura Normalizada')
+plt.ylabel('Bicicletas Alquiladas')
+plt.title('Relación entre Temperatura y Alquiler de Bicicletas')
+plt.grid(True, alpha=0.3)
+plt.show()
+
+# Gráficas adicionales para otras variables importantes
+fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+
+# Temperatura percibida
+axes[0,0].scatter(bike_data['atemp'], bike_data['cnt'], alpha=0.6, color='red')
+axes[0,0].set_xlabel('Temperatura Percibida')
+axes[0,0].set_ylabel('Bicicletas Alquiladas')
+axes[0,0].set_title('Temperatura Percibida vs Alquileres')
+
+# Humedad
+axes[0,1].scatter(bike_data['hum'], bike_data['cnt'], alpha=0.6, color='green')
+axes[0,1].set_xlabel('Humedad Normalizada')
+axes[0,1].set_ylabel('Bicicletas Alquiladas')
+axes[0,1].set_title('Humedad vs Alquileres')
+
+# Velocidad del viento
+axes[1,0].scatter(bike_data['windspeed'], bike_data['cnt'], alpha=0.6, color='purple')
+axes[1,0].set_xlabel('Velocidad del Viento Normalizada')
+axes[1,0].set_ylabel('Bicicletas Alquiladas')
+axes[1,0].set_title('Viento vs Alquileres')
+
+# Estación
+axes[1,1].boxplot([bike_data[bike_data['season']==1]['cnt'],
+                   bike_data[bike_data['season']==2]['cnt'],
+                   bike_data[bike_data['season']==3]['cnt'],
+                   bike_data[bike_data['season']==4]['cnt']])
+axes[1,1].set_xlabel('Estación')
+axes[1,1].set_ylabel('Bicicletas Alquiladas')
+axes[1,1].set_title('Alquileres por Estación')
+axes[1,1].set_xticklabels(['Primavera', 'Verano', 'Otoño', 'Invierno'])
+
+plt.tight_layout()
+plt.show()
+
+# Pregunta: ¿Se observa alguna relación lineal?
+#Sí, se observa una relación lineal positiva entre la temperatura y el número de bicicletas alquiladas. A mayor temperatura, más bicicletas se alquilan.
+
+#También se observa:
+#- Relación positiva con temperatura percibida
+#- Relación negativa con humedad y velocidad del viento
+#- Variación estacional clara (más alquileres en verano/otoño)
+
+#5. División en conjuntos de entrenamiento y prueba
+from sklearn.model_selection import train_test_split
+
+X = bike_data[numeric_features]
+y = bike_data[target]
+
+# Divide los datos en entrenamiento (70%) y prueba con test_size (30%)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Mostrar cuántas filas tiene cada conjunto
+print(f"Tamaño de los conjuntos:")
+print(f"Entrenamiento: {X_train.shape[0]} muestras")
+print(f"Prueba: {X_test.shape[0]} muestras")
+print(f"Características: {X_train.shape[1]}")
+
+# Pregunta: ¿Qué pasa si usamos un test_size demasiado pequeño?
+#Si test_size es demasiado pequeño:
+#- La evaluación puede no ser representativa de todo el dataset
+#- Mayor variabilidad en las métricas de evaluación
+#- Riesgo de sobreestimación del rendimiento real
+#- Menos confianza en la generalización del modelo
+
+#Si test_size es demasiado grande:
+#- Menos datos para entrenar el modelo
+#- Posible subentrenamiento (underfitting)
+#- Modelo menos preciso por falta de datos de entrenamiento
+#El 70-30% es un balance razonable para este tamaño de dataset.
+
+# 6. Entrenamiento del modelo
+from sklearn.linear_model import LinearRegression
+
+# Crea y entrena el modelo
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Muestra los coeficientes βn
+print("Coeficientes del modelo:")
+for feature, coef in zip(numeric_features, model.coef_):
+    print(f"  {feature}: {coef:.2f}")
+
+print(f"\nIntercepto (β0): {model.intercept_:.2f}")
+
+# Ecuación del modelo
+print("\nEcuación del modelo:")
+equation = f"rentals = {model.intercept_:.2f}"
+for feature, coef in zip(numeric_features, model.coef_):
+    if coef >= 0:
+        equation += f" + {coef:.2f}·{feature}"
+    else:
+        equation += f" - {abs(coef):.2f}·{feature}"
+print(equation)
+
+# Pregunta: ¿Cómo interpretas el coeficiente asociado a la temperatura?
+
+#El coeficiente de temperatura indica cuántas bicicletas adicionales se alquilan por cada unidad de aumento en la temperatura normalizada.
+#Por ejemplo, si el coeficiente es 1500, significa que por cada aumento de 1 unidad en la temperatura normalizada, se espera alquilar aproximadamente 1500 bicicletas más, manteniendo constantes las demás variables.
+
+#Un coeficiente positivo indica relación directa (más temperatura = más alquileres), mientras que un coeficiente negativo en humedad indicaría relación inversa.
+
+# 7. Evaluación del modelo
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import numpy as np
+
+# Genera predicciones
+y_pred = model.predict(X_test)
+
+# Calcula métricas
+mse = mean_squared_error(y_test, y_pred)
+rmse = np.sqrt(mse)
+mae = mean_absolute_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print("Métricas de evaluación:")
+print(f"MSE: {mse:.2f}")
+print(f"RMSE: {rmse:.2f}")
+print(f"MAE: {mae:.2f}")
+print(f"R²: {r2:.4f}")
+
+# Grafica valores reales vs predichos
+plt.figure(figsize=(10, 6))
+plt.scatter(y_test, y_pred, alpha=0.6)
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+plt.xlabel("Valores Reales")
+plt.ylabel("Predicciones")
+plt.title("Valores Reales vs Predicciones")
+plt.grid(True, alpha=0.3)
+plt.show()
+
+# Gráfico de residuos
+residuals = y_test - y_pred
+plt.figure(figsize=(10, 6))
+plt.scatter(y_pred, residuals, alpha=0.6)
+plt.axhline(y=0, color='r', linestyle='--')
+plt.xlabel("Predicciones")
+plt.ylabel("Residuos")
+plt.title("Análisis de Residuos")
+plt.grid(True, alpha=0.3)
+plt.show()
+
+# Pregunta: ¿Qué información nos da el MSE sobre la calidad del modelo?
+#El MSE (Mean Squared Error) nos da el error cuadrático promedio del modelo.
+#- Mide la calidad general del modelo
+#- Penaliza más los errores grandes (por el cuadrado)
+#- Valor más bajo indica mejor rendimiento
+#- Está en unidades cuadradas de la variable objetivo
+
+#En este caso, un MSE de X significa que en promedio, el cuadrado del error entre predicciones y valores reales es X.
+# Pregunta: ¿Qué información nos da el RMSE sobre la calidad del modelo?
+
+#El RMSE (Root Mean Squared Error) es la raíz cuadrada del MSE.
+#- Está en las mismas unidades que la variable objetivo (bicicletas)
+#- Más interpretable que el MSE
+#- Indica el error típico del modelo
+#- Por ejemplo, un RMSE de 500 significa que las predicciones típicamente
+#se desvían en ±500 bicicletas del valor real
+
+# 8. Extensión / Retos
+
+
+# Entrena un modelo usando solo la variable 'temp'
+from sklearn.linear_model import LinearRegression
+
+# Modelo simple con solo temperatura
+X_simple = bike_data[['temp']]
+y_simple = bike_data[target]
+
+X_train_simple, X_test_simple, y_train_simple, y_test_simple = train_test_split(
+    X_simple, y_simple, test_size=0.3, random_state=42)
+
+model_simple = LinearRegression()
+model_simple.fit(X_train_simple, y_train_simple)
+
+y_pred_simple = model_simple.predict(X_test_simple)
+
+# Métricas del modelo simple
+mse_simple = mean_squared_error(y_test_simple, y_pred_simple)
+rmse_simple = np.sqrt(mse_simple)
+r2_simple = r2_score(y_test_simple, y_pred_simple)
+
+print("COMPARACIÓN DE MODELOS:")
+print("=" * 50)
+print("Modelo Multivariable:")
+print(f"  MSE: {mse:.2f}")
+print(f"  RMSE: {rmse:.2f}")
+print(f"  R²: {r2:.4f}")
+print("\nModelo Simple (solo temperatura):")
+print(f"  MSE: {mse_simple:.2f}")
+print(f"  RMSE: {rmse_simple:.2f}")
+print(f"  R²: {r2_simple:.4f}")
+
+# Gráfica comparativa
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+plt.scatter(y_test, y_pred, alpha=0.6, label='Multivariable')
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=1)
+plt.xlabel("Reales")
+plt.ylabel("Predicciones")
+plt.title("Modelo Multivariable")
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.scatter(y_test_simple, y_pred_simple, alpha=0.6, color='orange', label='Simple')
+plt.plot([y_test_simple.min(), y_test_simple.max()], 
+         [y_test_simple.min(), y_test_simple.max()], 'r--', lw=1)
+plt.xlabel("Reales")
+plt.ylabel("Predicciones")
+plt.title("Modelo Simple (solo temp)")
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Pregunta: ¿Cuál modelo es más preciso y por qué?
+
+#El modelo multivariable es más preciso porque:
+#1. Más información: Utiliza múltiples variables que afectan los alquileres (estación, clima, día de semana, etc.)
+
+#2. Mejor R²: El R² del modelo multivariable es mayor, indicando que explica más variabilidad en los datos
+
+#3. Menor error: Tiene MSE y RMSE más bajos
+
+#4.Contexto real: En la vida real, el alquiler de bicicletas depende de múltiples factores, no solo de la temperatura
+
+#El modelo simple es más fácil de interpretar pero menos preciso porque ignora otros factores importantes como humedad, viento, estacionalidad.
+# Análisis adicional de importancia de variables
+importance = pd.DataFrame({
+    'feature': numeric_features,
+    'coefficient': model.coef_,
+    'abs_coefficient': np.abs(model.coef_)
+}).sort_values('abs_coefficient', ascending=False)
+
+print("\nImportancia de variables (por magnitud de coeficiente):")
+print(importance)
+
+#Este análisis completo te permite entender cómo aplicar regresión lineal para predecir el número de bicicletas alquiladas y comparar diferentes enfoques de modelado.
